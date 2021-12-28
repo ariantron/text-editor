@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Text Editor</title>
+    <link href="src/bootstrap.min.css" rel="stylesheet">
+    <script src="src/bootstrap.bundle.min.js" type="text/javascript"></script>
+    <script src="src/jquery-3.6.0.min.js" type="text/javascript"></script>
+    <style>
+        #txt {
+            width: 100%;
+            height: 15rem;
+            background: #f5f5f5;
+            border: 1px solid black;
+            overflow: auto;
+        }
+
+        #txt[placeholder]:empty:before {
+            content: attr(placeholder);
+            color: #555;
+        }
+
+        #txt[placeholder]:empty:focus:before {
+            content: "";
+        }
+    </style>
+</head>
+<body>
+<div class="p-5 dir-ltr">
+    <button style="display: inline-block"
+            onclick="document.getElementById('txt').focus();doBold()">
+        Bold
+    </button>
+    <button style="display: inline-block"
+            onclick="document.getElementById('txt').focus();doUnderline()">
+        Underline
+    </button>
+    <button style="display: inline-block"
+            onclick="document.getElementById('txt').focus();doItalic()">
+        Italic
+    </button>
+    <button onclick="document.getElementById('txt').focus();doLineThrough()">
+        Strikethrough
+    </button>
+    <button style="display: inline-block"
+            onclick="document.getElementById('txt').focus();doLeftAlign()">
+        Left Text Align
+    </button>
+    <button style="display: inline-block"
+            onclick="document.getElementById('txt').focus();doCenterAlign()">
+        Center Text Align
+    </button>
+    <button style="display: inline-block"
+            onclick="document.getElementById('txt').focus();doRightAlign()">
+        Right Text Align
+    </button>
+    <button style="display: inline-block"
+            onclick="document.getElementById('txt').focus();doJustifyAlign()">
+        Justify Text Align
+    </button>
+    <button style="display: inline-block"
+            onclick="document.getElementById('txt').focus();doLeftDirection()">
+        LTR
+    </button>
+    <button style="display: inline-block"
+            onclick="document.getElementById('txt').focus();doRightDirection()">
+        RTL
+    </button>
+    <button style="display: inline-block" data-bs-toggle="modal" data-bs-target="#link-modal" onclick="insertLink()">
+        Link
+    </button>
+    <div id="link-modal" class="modal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <!-- BEGIN: Modal Header -->
+                <div class="modal-header">
+                    <h2 class="font-medium text-base ml-auto">Insert Link</h2>
+                </div> <!-- END: Modal Header -->
+                <!-- BEGIN: Modal Body -->
+                <div class="modal-body grid grid-cols-12 gap-4 gap-y-3">
+                    <div class="col-span-12 sm:col-span-12">
+                        <label for="href" class="form-label">Link</label>
+                        <input id="href" type="text" class="form-control"
+                               placeholder="example.com">
+                    </div>
+                </div> <!-- END: Modal Body -->
+                <!-- BEGIN: Modal Footer -->
+                <div class="modal-footer text-right">
+                    <button type="button" data-bs-dismiss="modal"
+                            class="btn btn-outline-secondary w-20 mr-1">Cancel
+                    </button>
+                    <button id="linkSaver" data-bs-dismiss="modal" type="button" class="btn btn-primary w-20">Submit
+                    </button>
+                </div> <!-- END: Modal Footer -->
+            </div>
+        </div>
+    </div>
+    <script>
+        function pasteHtmlAtCaret(html) {
+            let sel, range;
+            if (window.getSelection) {
+                // IE9 and non-IE
+                sel = window.getSelection();
+                if (sel.getRangeAt && sel.rangeCount) {
+                    range = sel.getRangeAt(0);
+                    range.deleteContents();
+
+                    // Range.createContextualFragment() would be useful here but is
+                    // non-standard and not supported in all browsers (IE9, for one)
+                    const el = document.createElement("div");
+                    el.innerHTML = html;
+                    let frag = document.createDocumentFragment(),
+                        node,
+                        lastNode;
+                    while ((node = el.firstChild)) {
+                        lastNode = frag.appendChild(node);
+                    }
+                    range.insertNode(frag);
+
+                    // Preserve the selection
+                    if (lastNode) {
+                        range = range.cloneRange();
+                        range.setStartAfter(lastNode);
+                        range.collapse(true);
+                        sel.removeAllRanges();
+                        sel.addRange(range);
+                    }
+                }
+            } else if (document.selection && document.selection.type !== "Control") {
+                // IE < 9
+                document.selection.createRange().pasteHTML(html);
+            }
+        }
+
+        function doBold() {
+            pasteHtmlAtCaret(
+                '<span style="font-weight: bold;">' + window.getSelection() + '</span>'
+            );
+        }
+
+        function doItalic() {
+            pasteHtmlAtCaret(
+                '<span style="font-style: italic;">' + window.getSelection() + '</span>'
+            );
+        }
+
+        function doLineThrough() {
+            pasteHtmlAtCaret(
+                '<span style="text-decoration: line-through;">' + window.getSelection() + '</span>'
+            );
+        }
+
+        function doUnderline() {
+            pasteHtmlAtCaret(
+                '<span style="text-decoration: underline;">' + window.getSelection() + '</span>'
+            );
+        }
+
+        function saveSelection() {
+            if (window.getSelection) {
+                sel = window.getSelection();
+                if (sel.getRangeAt && sel.rangeCount) {
+                    var ranges = [];
+                    for (var i = 0, len = sel.rangeCount; i < len; ++i) {
+                        ranges.push(sel.getRangeAt(i));
+                    }
+                    return ranges;
+                }
+            } else if (document.selection && document.selection.createRange) {
+                return document.selection.createRange();
+            }
+            return null;
+        }
+
+        function restoreSelection(savedSel) {
+            if (savedSel) {
+                if (window.getSelection) {
+                    sel = window.getSelection();
+                    sel.removeAllRanges();
+                    for (var i = 0, len = savedSel.length; i < len; ++i) {
+                        sel.addRange(savedSel[i]);
+                    }
+                } else if (document.selection && savedSel.select) {
+                    savedSel.select();
+                }
+            }
+        }
+
+        function insertLink() {
+            let selection = saveSelection();
+            $("#linkSaver").click(function () {
+                restoreSelection(selection)
+                let a = document.createElement('a')
+                a.href = document.getElementById('href').value
+                a.style = "color:blue;text-decoration:underline"
+                a.setAttribute('data-bs-toggle','tooltip')
+                a.title = document.getElementById('href').value
+                a.innerHTML = document.getElementById('href').value
+                window.getSelection().getRangeAt(0).surroundContents(a)
+            });
+        }
+
+        function doCenterAlign() {
+            pasteHtmlAtCaret(
+                '<div style="text-align: center;">' + window.getSelection() + '</div>'
+            );
+        }
+
+        function doRightAlign() {
+            pasteHtmlAtCaret(
+                '<div style="text-align: right;">' + window.getSelection() + '</div>'
+            );
+        }
+
+        function doLeftAlign() {
+            pasteHtmlAtCaret(
+                '<div style="text-align: left;">' + window.getSelection() + '</div>'
+            );
+        }
+
+        function doJustifyAlign() {
+            pasteHtmlAtCaret(
+                '<div style="text-align: justify;">' + window.getSelection() + '</div>'
+            );
+        }
+
+        function doRightDirection() {
+            pasteHtmlAtCaret(
+                '<div style="direction: rtl;">' + window.getSelection() + '</div>'
+            );
+        }
+
+        function doLeftDirection() {
+            pasteHtmlAtCaret(
+                '<div style="direction: ltr;">' + window.getSelection() + '</div>'
+            );
+        }
+
+    </script>
+    <script>
+        $(".ce").focusout(function () {
+            let element = $(this);
+            if (!element.text().replace(" ", "").length) {
+                element.empty();
+            }
+        });
+    </script>
+    <div class="ce mt-2 p-3" contenteditable="true" id="txt" dir="auto" placeholder="Type some thing ..."></div>
+</div>
+<script>
+    jQuery(function($){
+        $(".test").focusout(function(){
+            var element = $(this);
+            if (!element.text().replace(" ", "").length) {
+                element.empty();
+            }
+        });
+    });
+</script>
+</body>
+</html>
